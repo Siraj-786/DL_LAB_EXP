@@ -1,0 +1,31 @@
+from sklearn.datasets import load_breast_cancer
+from sklearn.model_selection import train_test_split
+from keras import Sequential
+from keras.layers import Dense
+import matplotlib.pyplot as plt
+
+# for binary classification 
+cancer=load_breast_cancer()
+x=cancer.data
+y=cancer.target
+y=y.reshape(-1,1)
+
+x_train,x_test,y_train,y_test=train_test_split(x,y,test_size=0.2)
+
+
+model=Sequential()
+model.add(Dense(10,activation='relu'))    # increase this for multple hidden layers
+model.add(Dense(1,activation='sigmoid'))
+model.compile(optimizer='adam',loss='binary_crossentropy',metrics=['accuracy'])
+history=model.fit(x_train,y_train,epochs=10,validation_split=0.2,batch_size=20)
+
+
+plt.subplot(1,2,1)
+plt.plot(history.history['loss'],label='loss')
+plt.plot(history.history['val_loss'],label='val_loss')
+plt.legend()
+plt.subplot(1,2,2)
+plt.plot(history.history['accuracy'],label='acc')
+plt.plot(history.history['val_accuracy'],label='val_acc')
+plt.legend()
+plt.show()

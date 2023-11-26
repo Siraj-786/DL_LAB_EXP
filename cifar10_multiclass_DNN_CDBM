@@ -1,0 +1,37 @@
+from keras.datasets import cifar10
+import matplotlib.pyplot as plt
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+
+plt.imshow(x_train[0])
+
+from keras.models import Sequential
+from keras.layers import Conv2D,Dropout,BatchNormalization,MaxPooling2D,Flatten,Dense
+model=Sequential()
+model.add(Conv2D(32,(3,3),activation='relu',input_shape=(32,32,3)))
+model.add(Dropout(0.2))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+
+model.add(Conv2D(64,(3,3),activation='relu'))
+model.add(Dropout(0.2))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2,2)))
+
+model.add(Flatten())
+model.add(Dense(256,activation='relu'))
+model.add(Dense(128,activation='relu'))
+model.add(Dense(10,activation='softmax'))
+
+model.summary()
+
+model.compile(optimizer='adam',loss='sparse_categorical_crossentropy',metrics=['accuracy'])
+
+history=model.fit(x_train,y_train,epochs=10,validation_split=0.2)
+
+plt.plot(history.history['accuracy'],label='accuracy')
+plt.plot(history.history['val_accuracy'],label='val_accuracy')
+plt.legend()
+plt.show()
+
+print(model.evaluate(x_test,y_test))
+

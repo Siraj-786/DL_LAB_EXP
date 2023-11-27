@@ -1,0 +1,48 @@
+from keras.models import Model
+from keras.applications.vgg16 import VGG16
+from keras.applications.vgg16 import preprocess_input
+from keras.preprocessing.image import load_img
+from keras.preprocessing.image import img_to_array
+from numpy import expand_dims
+import matplotlib.pyplot as plt
+import tensorflow as tf
+from keras import backend as K
+import numpy as np
+
+
+# Load the VGG16 model
+model = VGG16()
+
+# Redefine the model to output right after the first hidden layer
+ixs = [2, 5, 9, 13, 17]
+outputs = [model.layers[i].output for i in ixs]
+model = Model(inputs=model.inputs, outputs=outputs)
+
+# Load and preprocess the image
+img_path = "C:/Users/Siraj/Downloads/pexels-future-kiiid-3739327.jpg"
+img = load_img(img_path, target_size=(224, 224))
+img_array = img_to_array(img)
+img_array = expand_dims(img_array, axis=0)
+img_array = preprocess_input(img_array)
+
+# Get feature maps for the first hidden layer
+feature_maps = model.predict(img_array)
+
+# Plot the output from each block
+square = 8
+for fmap in feature_maps:
+    # Plot all 64 maps in an 8x8 grid
+    ix = 1
+    for _ in range(square):
+        for _ in range(square):
+            # Specify subplot and turn off axis
+            ax = plt.subplot(square, square, ix)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            # Plot filter channel in grayscale
+            plt.imshow(fmap[0, :, :, ix-1], cmap='gray')
+            ix += 1
+    # Show the figure
+    plt.show()
+
+

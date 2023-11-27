@@ -45,4 +45,81 @@ for fmap in feature_maps:
     # Show the figure
     plt.show()
 
+from keras.applications.vgg16 import VGG16, preprocess_input
+from keras.preprocessing import image
+from keras.models import Model
+import numpy as np
+import matplotlib.pyplot as plt
+import cv2
+import tensorflow as tf
+
+# Load the pre-trained VGG16 model
+model = VGG16(weights='imagenet')
+
+# Load and preprocess the input image
+img_path = "pexels-future-kiiid-3739327.jpg"  # Replace with the path to your image
+img = image.load_img(img_path, target_size=(224, 224))
+img_array = image.img_to_array(img)
+img_array = np.expand_dims(img_array, axis=0)
+x = preprocess_input(img_array)
+
+# Get the predictions for the image
+preds = model.predict(x)
+
+# Get the index of the predicted class
+class_idx = np.argmax(preds[0])
+
+# Get the output of the final convolutional layer in the VGG16 model
+last_conv_layer = model.get_layer('block5_conv3')
+
+# Create a model that maps the input image to the activations of the last conv layer
+cam_model = Model(inputs=model.input, outputs=[last_conv_layer.output, model.output])
+
+# Get the gradient of the predicted class with respect to the output of the last conv layer
+with tf.GradientTape() as tape:
+    conv_output, preds = cam_model(x)
+    class_output = preds[:, class_idx]
+
+# Get the gradients of the class output with respect to the feature map
+grads = tape.gradient(class_output, conv_output)
+
+# Compute the mean of the gradients over each feature map channel
+pooled_grads = tf.reduce_mean(grads, axis=(0, 1, 2))
+
+# Multiply each feature map by the importance of this channel with respect to the predicted class
+last_conv_output = conv_output.numpy()[0]
+for i in range(last_conv_output.shape[-1]):
+    last_conv_output[:, :, i] *= pooled_grads[i]
+
+# Compute the heatmap by taking the mean along the channel dimension
+heatmap = np.mean(last_conv_output, axis=-1)
+
+# Normalize the heatmap
+heatmap = np.maximum(heatmap, 0)
+heatmap /= np.max(heatmap)
+
+# Resize the heatmap to the original image size
+heatmap = cv2.resize(heatmap, (img_array.shape[2], img_array.shape[1]))
+
+# Convert the heatmap to RGB
+heatmap = np.uint8(255 * heatmap)
+
+# Apply the heatmap to the original image
+heatmap = cv2.applyColorMap(heatmap, cv2.COLORMAP_JET)
+
+# Superimpose the heatmap on the original image
+superimposed_img = cv2.addWeighted(img_array[0].astype('uint8'), 0.6, heatmap, 0.4, 0)
+
+# Display the original image, heatmap, and superimposed image
+plt.imshow(img)
+plt.title('Original Image')
+plt.show()
+
+plt.imshow(heatmap)
+plt.title('Class Activation Map')
+plt.show()
+
+plt.imshow(superimposed_img)
+plt.title('Superimposed Image')
+plt.show()
 

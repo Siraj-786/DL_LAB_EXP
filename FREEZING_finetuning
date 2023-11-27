@@ -1,0 +1,59 @@
+from keras.applications import VGG16
+from keras.models import Sequential, Model
+from keras.layers import Dense, Flatten
+from keras.datasets import cifar10
+from keras.utils import to_categorical
+from keras.optimizers import SGD
+
+# Load CIFAR-10 data
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+y_train = to_categorical(y_train, 10)
+y_test = to_categorical(y_test, 10)
+
+# Preprocess the data
+x_train = x_train.astype('float32') / 255.0
+x_test = x_test.astype('float32') / 255.0
+
+# Load the VGG16 model pre-trained on ImageNet data
+base_model = VGG16(weights='imagenet', include_top=False, input_shape=(32, 32, 3))
+
+# Scenario 1: Fine-tune with all layers trainable
+model1 = Sequential()
+model1.add(base_model)
+model1.add(Flatten())
+model1.add(Dense(256, activation='relu'))
+model1.add(Dense(10, activation='softmax'))
+
+# Compile the model
+model1.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Train the model
+model1.fit(x_train, y_train, epochs=5, batch_size=64, validation_data=(x_test, y_test))
+
+# Scenario 2: Fine-tune by freezing the initial layers
+for layer in base_model.layers:
+    layer.trainable = False
+
+model2 = Sequential()
+model2.add(base_model)
+model2.add(Flatten())
+model2.add(Dense(256, activation='relu'))
+model2.add(Dense(10, activation='softmax'))
+
+model2.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+model2.fit(x_train, y_train, epochs=5, batch_size=64, validation_data=(x_test, y_test))
+
+# Scenario 3: Fine-tune by freezing the entire network except the final layer
+for layer in base_model.layers[:-4]:  # Freeze all layers except the last four
+    layer.trainable = False
+
+model3 = Sequential()
+model3.add(base_model)
+model3.add(Flatten())
+model3.add(Dense(256, activation='relu'))
+model3.add(Dense(10, activation='softmax'))
+
+model3.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+model3.fit(x_train, y_train, epochs=5, batch_size=64, validation_data=(x_test, y_test))

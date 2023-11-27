@@ -1,0 +1,18 @@
+import tensorflow as tf
+import matplotlib.pyplot as plt
+
+# Load the image
+image = tf.keras.preprocessing.image.load_img('image.jpg', target_size=(224, 224))
+image = tf.keras.preprocessing.image.img_to_array(image)
+image = tf.expand_dims(image, axis=0)
+
+# Create a pre-trained VGG16 model
+model = tf.keras.applications.VGG16(weights='imagenet', include_top=False)
+
+# Extract the output of the first convolution layer
+output = model.predict(image)
+feature_map = output[0, :, :, 0]
+
+# Use Matplotlib to visualize the feature map
+plt.imshow(feature_map)
+plt.show()
